@@ -1,0 +1,1010 @@
+WITH 
+-- Tables with the raw data
+orig_distinct as
+(
+--- Use the following query to get the number of comments 
+--  for each combination of generator (original by humans, chatGPT, chatGPT with requested length) and
+--  for each case, before and after selecting the really distinct comments
+--  original files were processed in order to remove non-standar characters 
+-- select * from orig_distinct
+select 'Ao' as case, (select count(*) from (select comment from mod_demo.z_amazon)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_amazon)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_amazon)) as distinct
+UNION ALL
+select 'Ac' as case, (select count(*) from (select comment from mod_demo.z_amazon_chatgpt)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_amazon_chatgpt)) as length, 	
+                     (select count(*) from (select distinct comment from mod_demo.z_amazon_chatgpt)) as distinct
+UNION ALL
+select 'Al' as case, (select count(*) from (select comment from mod_demo.z_amazon_chatgpt_length)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_amazon_chatgpt_length)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_amazon_chatgpt_length)) as distinct
+UNION ALL
+select 'Io' as case, (select count(*) from (select comment from mod_demo.z_indianairlines)) as source,
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_indianairlines)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_indianairlines)) as distinct
+UNION ALL
+select 'Ic' as case, (select count(*) from (select comment from mod_demo.z_indianairlines_chatgpt)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_indianairlines_chatgpt)) as length, 	
+                     (select count(*) from (select distinct comment from mod_demo.z_indianairlines_chatgpt)) as distinct
+UNION ALL
+select 'Il' as case, (select count(*) from (select comment from mod_demo.z_indianairlines_chatgpt_length)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_indianairlines_chatgpt_length)) as length, 
+					(select count(*) from (select distinct comment from mod_demo.z_indianairlines_chatgpt_length)) as distinct
+UNION ALL
+select 'Mo' as case, (select count(*) from (select comment from mod_demo.z_macdonald)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_macdonald)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_macdonald)) as distinct
+UNION ALL
+select 'Mc' as case, (select count(*) from (select comment from mod_demo.z_macdonald_chatgpt)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_macdonald_chatgpt)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_macdonald_chatgpt)) as distinct
+UNION ALL
+select 'Ml' as case, (select count(*) from (select comment from mod_demo.z_macdonald_chatgpt_length)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_macdonald_chatgpt_length)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_macdonald_chatgpt_length)) as distinct
+UNION ALL
+select 'Wo' as case, (select count(*) from (select comment from mod_demo.z_womensclothing)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_womensclothing)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_womensclothing)) as distinct
+UNION ALL
+select 'Wc' as case, (select count(*) from (select comment from mod_demo.z_womensclothing_chatgpt)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_womensclothing_chatgpt)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_womensclothing_chatgpt)) as distinct
+UNION ALL
+select 'Wl' as case, (select count(*) from (select comment from mod_demo.z_womensclothing_chatgpt_length)) as source, 
+	                 (select round(avg(length(comment)),0) from (select comment from mod_demo.z_womensclothing_chatgpt_length)) as length, 
+                     (select count(*) from (select distinct comment from mod_demo.z_womensclothing_chatgpt_length)) as distinct
+),
+c_a_o as
+(
+select comment, words from mod_demo.y_amazon -- Case 1: Amazon, original
+),
+c_a_c as
+(
+select comment, words from mod_demo.y_amazon_chatgpt -- Case 1: Amazon, chatGPT
+),
+c_a_l as
+(
+select comment, words from mod_demo.y_amazon_chatgpt_length -- Case 1: Amazon, chatGPT with a requested length
+),
+c_i_o as
+(
+select comment, words from mod_demo.y_indianairlines -- Case 2: Indian Airlines, original
+),
+c_i_c as
+(
+select comment, words from mod_demo.y_indianairlines_chatgpt -- Case 2: Indian Airlines, chatGPT
+),
+c_i_l as
+(
+select comment, words from mod_demo.y_indianairlines_chatgpt_length -- Case 2: Indian Airlines, chatGPT with a requested length
+),
+c_m_o as
+(
+select comment, words from mod_demo.y_macdonald -- Case 3: MacDonald, original
+),
+c_m_c as
+(
+select comment, words from mod_demo.y_macdonald_chatgpt -- Case 3: MacDonald, chatGPT
+),
+c_m_l as
+(
+select comment, words from mod_demo.y_macdonald_chatgpt_length -- Case 3: MacDonald, chatGPT with a requested length
+),
+c_w_o as
+(
+select comment, words from mod_demo.y_womensclothing -- Case 4: Women's clothing, original
+),
+c_w_c as
+(
+select comment, words from mod_demo.y_womensclothing_chatgpt -- Case 4: Women's clothing, chatGPT
+),
+c_w_l as
+(
+select comment, words from mod_demo.y_womensclothing_chatgpt_length -- Case 4: Women's clothing, chatGPT with a requested length
+),
+--- Integration of coments and used words from the cases
+c_t_o as
+(
+select comment, words from
+(
+	select comment, words from c_a_o
+	union all
+	select comment, words from c_i_o
+	union all
+	select comment, words from c_m_o
+	union all
+	select comment, words from c_w_o
+)
+),
+c_t_c as
+(
+select comment, words from
+(
+	select comment, words from c_a_c
+	union all
+	select comment, words from c_i_c
+	union all
+	select comment, words from c_m_c
+	union all
+	select comment, words from c_w_c
+) 
+),
+c_t_l as
+(
+select comment, words from
+(
+	select comment, words from c_a_l
+	union all
+	select comment, words from c_i_l
+	union all
+	select comment, words from c_m_l
+	union all
+	select comment, words from c_w_l
+) 
+),
+
+stop_words as
+(
+	select * from mod_demo.x_stop_words -- Stop words to be considered
+),
+fw_a_o as
+(
+select word, frequency from mod_demo.x_fwa_amazon -- Case 1: Amazon, original
+),
+fw_a_c as
+(
+select word, frequency from mod_demo.x_fwa_amazon_chatgpt -- Case 1: Amazon, chatGPT
+),
+fw_a_l as
+(
+select word, frequency from mod_demo.x_fwa_amazon_chatgpt_length -- Case 1: Amazon, chatGPT with a requested length
+),
+fw_i_o as
+(
+select word, frequency from mod_demo.x_fwa_indianairlines -- Case 2: Indian Airlines, original
+),
+fw_i_c as
+(
+select word, frequency from mod_demo.x_fwa_indianairlines_chatgpt -- Case 2: Indian Airlines, chatGPT
+),
+fw_i_l as
+(
+select word, frequency from mod_demo.x_fwa_indianairlines_chatgpt_length -- Case 2: Indian Airlines, chatGPT with a requested length
+),
+fw_m_o as
+(
+select word, frequency from mod_demo.x_fwa_macdonald -- Case 3: MacDonald, original
+),
+fw_m_c as
+(
+select word, frequency from mod_demo.x_fwa_macdonald_chatgpt -- Case 3: MacDonald, chatGPT
+),
+fw_m_l as
+(
+select word, frequency from mod_demo.x_fwa_macdonald_chatgpt_length -- Case 3: MacDonald, chatGPT with a requested length
+),
+fw_w_o as
+(
+select word, frequency from mod_demo.x_fwa_womensclothing -- Case 4: Women's clothing, original
+),
+fw_w_c as
+(
+select word, frequency from mod_demo.x_fwa_womensclothing_chatgpt -- Case 4: Women's clothing, chatGPT
+),
+fw_w_l as
+(
+select word, frequency from mod_demo.x_fwa_womensclothing_chatgpt_length -- Case 4: Women's clothing, chatGPT with a requested length
+),
+--- Integration of frequent words from the cases
+fw_t_o as
+(
+select word, sum(frequency) as frequency from
+(
+	select word, frequency from fw_a_o
+	union all
+	select word, frequency from fw_i_o
+	union all
+	select word, frequency from fw_m_o
+	union all
+	select word, frequency from fw_w_o
+) group by word order by frequency
+),
+fw_t_c as
+(
+select word, sum(frequency) as frequency from
+(
+	select word, frequency from fw_a_c
+	union all
+	select word, frequency from fw_i_c
+	union all
+	select word, frequency from fw_m_c
+	union all
+	select word, frequency from fw_w_c
+) group by word order by frequency
+),
+fw_t_l as
+(
+select word, sum(frequency) as frequency from
+(
+	select word, frequency from fw_a_l
+	union all
+	select word, frequency from fw_i_l
+	union all
+	select word, frequency from fw_m_l
+	union all
+	select word, frequency from fw_w_l
+) group by word order by frequency
+),
+-- Words ONLY used by each generator in each case and in general
+fw_a_o_ as
+(
+	select word,frequency from fw_a_o
+	where word not in (select word from fw_a_c union all select word from fw_a_l)
+),
+fw_a_c_ as
+(
+	select word,frequency from fw_a_c
+	where word not in (select word from fw_a_o union all select word from fw_a_l)
+),
+fw_a_l_ as
+(
+	select word,frequency from fw_a_l
+	where word not in (select word from fw_a_c union all select word from fw_a_o)
+),
+fw_i_o_ as
+(
+	select word,frequency from fw_i_o
+	where word not in (select word from fw_i_c union all select word from fw_i_l)
+),
+fw_i_c_ as
+(
+	select word,frequency from fw_i_c
+	where word not in (select word from fw_i_o union all select word from fw_i_l)
+),
+fw_i_l_ as
+(
+	select word,frequency from fw_i_l
+	where word not in (select word from fw_i_c union all select word from fw_i_o)
+),
+fw_m_o_ as
+(
+	select word,frequency from fw_m_o
+	where word not in (select word from fw_m_c union all select word from fw_m_l)
+),
+fw_m_c_ as
+(
+	select word,frequency from fw_m_c
+	where word not in (select word from fw_m_o union all select word from fw_m_l)
+),
+fw_m_l_ as
+(
+	select word,frequency from fw_m_l
+	where word not in (select word from fw_m_c union all select word from fw_m_o)
+),
+fw_w_o_ as
+(
+	select word,frequency from fw_w_o
+	where word not in (select word from fw_w_c union all select word from fw_w_l)
+),
+fw_w_c_ as
+(
+	select word,frequency from fw_w_c
+	where word not in (select word from fw_w_o union all select word from fw_w_l)
+),
+fw_w_l_ as
+(
+	select word,frequency from fw_w_l
+	where word not in (select word from fw_w_c union all select word from fw_w_o)
+),
+fw_t_o_ as
+(
+	select word,frequency from fw_t_o
+	where word not in (select word from fw_t_c union all select word from fw_t_l)
+),
+fw_t_c_ as
+(
+	select word,frequency from fw_t_c
+	where word not in (select word from fw_t_o union all select word from fw_t_l)
+),
+fw_t_l_ as
+(
+	select word,frequency from fw_t_l
+	where word not in (select word from fw_t_c union all select word from fw_t_o)
+),
+-- Words used by ANY of the generators in each case and in general (UNION of uses)
+fw_a_u as
+(
+select distinct word, sum(frequency) as frequency from
+(	
+	select word,frequency from fw_a_o
+	union all
+	select word,frequency from fw_a_c
+	union all
+	select word,frequency from fw_a_l
+) group by word
+),
+fw_i_u as
+(
+select distinct word, sum(frequency) as frequency from
+(	
+	select word,frequency from fw_i_o
+	union all
+	select word,frequency from fw_i_c
+	union all
+	select word,frequency from fw_i_l
+) group by word
+),
+fw_m_u as
+(
+select distinct word, sum(frequency) as frequency from
+(	
+	select word,frequency from fw_m_o
+	union all
+	select word,frequency from fw_m_c
+	union all
+	select word,frequency from fw_m_l
+) group by word
+),
+fw_w_u as
+(
+select distinct word, sum(frequency) as frequency from
+(	
+	select word,frequency from fw_w_o
+	union all
+	select word,frequency from fw_w_c
+	union all
+	select word,frequency from fw_w_l
+) group by word
+),
+fw_t_u as
+(
+select distinct word, sum(frequency) as frequency from
+(	
+	select word,frequency from fw_t_o
+	union all
+	select word,frequency from fw_t_c
+	union all
+	select word,frequency from fw_t_l
+) group by word
+),
+-- Words used by ALL generators in each case and in general (COMMON use)
+fw_a_cm as
+(
+select word,frequency from fw_a_u
+where word in
+	(select word from fw_a_o
+	intersect
+	select word from fw_a_c
+	intersect
+	select word from fw_a_l) 
+ORDER BY frequency DESC
+),
+fw_i_cm as
+(
+select word,frequency from fw_i_u
+where word in
+	(select word from fw_i_o
+	intersect
+	select word from fw_i_c
+	intersect
+	select word from fw_i_l) 
+ORDER BY frequency DESC
+),
+fw_m_cm as
+(
+select word,frequency from fw_m_u
+where word in
+	(select word from fw_m_o
+	intersect
+	select word from fw_m_c
+	intersect
+	select word from fw_m_l) 
+ORDER BY frequency DESC
+),
+fw_w_cm as
+(
+select word,frequency from fw_w_u
+where word in
+	(select word from fw_w_o
+	intersect
+	select word from fw_w_c
+	intersect
+	select word from fw_w_l) 
+ORDER BY frequency DESC
+),
+fw_t_cm as
+(
+select word,frequency from fw_t_u
+where word in
+	(select word from fw_a_cm
+	intersect
+	select word from fw_i_cm
+	intersect
+	select word from fw_m_cm
+	intersect
+	select word from fw_w_cm) 
+ORDER BY frequency DESC
+),
+
+-- Words used by each generator in ALL cases (COMMON use by each generator)
+fw_cm_o as
+(
+select word,frequency from fw_t_o
+where word in
+	(select word from fw_a_o
+	intersect
+	select word from fw_i_o
+	intersect
+	select word from fw_m_o
+	intersect
+	select word from fw_w_o) 
+ORDER BY frequency DESC
+),
+fw_cm_c as
+(
+select word,frequency from fw_t_c
+where word in
+	(select word from fw_a_c
+	intersect
+	select word from fw_i_c
+	intersect
+	select word from fw_m_c
+	intersect
+	select word from fw_w_c) 
+ORDER BY frequency DESC
+),
+fw_cm_l as
+(
+select word,frequency from fw_t_l
+where word in
+	(select word from fw_a_l
+	intersect
+	select word from fw_i_l
+	intersect
+	select word from fw_m_l
+	intersect
+	select word from fw_w_l) 
+ORDER BY frequency DESC
+),
+-- Count of records in each table
+fw_counts as 
+(
+-- Tables with the raw data
+select 'stopwords' as table, (select count(*) from stop_words) as count, (select count(*) from stop_words where word not in (select word from stop_words)) as rw,  (select count(*) from stop_words where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_a_o' as table, (select count(*) from fw_a_o), (select count(*) from fw_a_o where word not in (select word from stop_words)) as rw,  (select count(*) from fw_a_o where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_a_c' as table, (select count(*) from fw_a_c), (select count(*) from fw_a_c where word not in (select word from stop_words)) as rw,  (select count(*) from fw_a_c where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_a_l' as table, (select count(*) from fw_a_l), (select count(*) from fw_a_l where word not in (select word from stop_words)) as rw,  (select count(*) from fw_a_l where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_i_o' as table, (select count(*) from fw_i_o), (select count(*) from fw_i_o where word not in (select word from stop_words)) as rw,  (select count(*) from fw_i_o where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_i_c' as table, (select count(*) from fw_i_c), (select count(*) from fw_i_c where word not in (select word from stop_words)) as rw,  (select count(*) from fw_i_c where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_i_l' as table, (select count(*) from fw_i_l), (select count(*) from fw_i_l where word not in (select word from stop_words)) as rw,  (select count(*) from fw_i_l where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_m_o' as table, (select count(*) from fw_m_o), (select count(*) from fw_m_o where word not in (select word from stop_words)) as rw,  (select count(*) from fw_m_o where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_m_c' as table, (select count(*) from fw_m_c), (select count(*) from fw_m_c where word not in (select word from stop_words)) as rw,  (select count(*) from fw_m_c where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_m_l' as table, (select count(*) from fw_m_l), (select count(*) from fw_m_l where word not in (select word from stop_words)) as rw,  (select count(*) from fw_m_l where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_w_o' as table, (select count(*) from fw_w_o), (select count(*) from fw_w_o where word not in (select word from stop_words)) as rw,  (select count(*) from fw_w_o where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_w_c' as table, (select count(*) from fw_w_c), (select count(*) from fw_w_c where word not in (select word from stop_words)) as rw,  (select count(*) from fw_w_c where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_w_l' as table, (select count(*) from fw_w_l), (select count(*) from fw_w_l where word not in (select word from stop_words)) as rw,  (select count(*) from fw_w_l where word in (select word from stop_words)) as sw UNION ALL
+--- Integration of frequent words from the cases, words used by each generator in any of the cases (UNION of uses for each generator)
+select 'fw_t_o' as table, (select count(*) from fw_t_o), (select count(*) from fw_t_o where word not in (select word from stop_words)) as rw,  (select count(*) from fw_t_o where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_t_c' as table, (select count(*) from fw_t_c), (select count(*) from fw_t_c where word not in (select word from stop_words)) as rw,  (select count(*) from fw_t_c where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_t_l' as table, (select count(*) from fw_t_l), (select count(*) from fw_t_l where word not in (select word from stop_words)) as rw,  (select count(*) from fw_t_l where word in (select word from stop_words)) as sw UNION ALL
+-- Words only used by each generator in each case and in general
+select 'fw_a_o_' as table, (select count(*) from fw_a_o_), (select count(*) from fw_a_o_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_a_o_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_a_c_' as table, (select count(*) from fw_a_c_), (select count(*) from fw_a_c_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_a_c_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_a_l_' as table, (select count(*) from fw_a_l_), (select count(*) from fw_a_l_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_a_l_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_i_o_' as table, (select count(*) from fw_i_o_), (select count(*) from fw_i_o_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_i_o_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_i_c_' as table, (select count(*) from fw_i_c_), (select count(*) from fw_i_c_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_i_c_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_i_l_' as table, (select count(*) from fw_i_l_), (select count(*) from fw_i_l_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_i_l_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_m_o_' as table, (select count(*) from fw_m_o_), (select count(*) from fw_m_o_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_m_o_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_m_c_' as table, (select count(*) from fw_m_c_), (select count(*) from fw_m_c_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_m_c_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_m_l_' as table, (select count(*) from fw_m_l_), (select count(*) from fw_m_l_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_m_l_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_w_o_' as table, (select count(*) from fw_w_o_), (select count(*) from fw_w_o_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_w_o_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_w_c_' as table, (select count(*) from fw_w_c_), (select count(*) from fw_w_c_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_w_c_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_w_l_' as table, (select count(*) from fw_w_l_), (select count(*) from fw_w_l_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_w_l_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_t_o_' as table, (select count(*) from fw_t_o_), (select count(*) from fw_t_o_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_t_o_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_t_c_' as table, (select count(*) from fw_t_c_), (select count(*) from fw_t_c_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_t_c_ where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_t_l_' as table, (select count(*) from fw_t_l_), (select count(*) from fw_t_l_ where word not in (select word from stop_words)) as rw,  (select count(*) from fw_t_l_ where word in (select word from stop_words)) as sw UNION ALL
+-- Words used by all generator in each case and in general (common use)
+select 'fw_a_cm' as table, (select count(*) from fw_a_cm), (select count(*) from fw_a_cm where word not in (select word from stop_words)) as rw,  (select count(*) from fw_a_cm where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_i_cm' as table, (select count(*) from fw_i_cm), (select count(*) from fw_i_cm where word not in (select word from stop_words)) as rw,  (select count(*) from fw_i_cm where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_m_cm' as table, (select count(*) from fw_m_cm), (select count(*) from fw_m_cm where word not in (select word from stop_words)) as rw,  (select count(*) from fw_m_cm where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_w_cm' as table, (select count(*) from fw_w_cm), (select count(*) from fw_w_cm where word not in (select word from stop_words)) as rw,  (select count(*) from fw_w_cm where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_t_cm' as table, (select count(*) from fw_t_cm), (select count(*) from fw_t_cm where word not in (select word from stop_words)) as rw,  (select count(*) from fw_t_cm where word in (select word from stop_words)) as sw UNION ALL
+-- Words used by any of the generators in each case and in general (union of uses)
+select 'fw_a_u' as table, (select count(*) from fw_a_u), (select count(*) from fw_a_u where word not in (select word from stop_words)) as rw,  (select count(*) from fw_a_u where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_i_u' as table, (select count(*) from fw_i_u), (select count(*) from fw_i_u where word not in (select word from stop_words)) as rw,  (select count(*) from fw_i_u where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_m_u' as table, (select count(*) from fw_m_u), (select count(*) from fw_m_u where word not in (select word from stop_words)) as rw,  (select count(*) from fw_m_u where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_w_u' as table, (select count(*) from fw_w_u), (select count(*) from fw_w_u where word not in (select word from stop_words)) as rw,  (select count(*) from fw_w_u where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_t_u' as table, (select count(*) from fw_t_u), (select count(*) from fw_t_u where word not in (select word from stop_words)) as rw,  (select count(*) from fw_t_u where word in (select word from stop_words)) as sw UNION ALL
+-- Words used by each generator in ALL cases (COMMON use by each generator)
+select 'fw_cm_o' as table, (select count(*) from fw_cm_o), (select count(*) from fw_cm_o where word not in (select word from stop_words)) as rw,  (select count(*) from fw_cm_o where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_cm_c' as table, (select count(*) from fw_cm_c), (select count(*) from fw_cm_c where word not in (select word from stop_words)) as rw,  (select count(*) from fw_cm_c where word in (select word from stop_words)) as sw UNION ALL
+select 'fw_cm_l' as table, (select count(*) from fw_cm_l), (select count(*) from fw_cm_l where word not in (select word from stop_words)) as rw,  (select count(*) from fw_cm_l where word in (select word from stop_words)) as sw --UNION ALL
+),
+c_counts as
+(
+SELECT 'c_a_o' as table, count(*) as count,
+    ROUND(AVG(length(c_a_o.comment)),2) as LAve, 
+	MIN(length(c_a_o.comment)) as LMin,
+	MAX(length(c_a_o.comment)) as LMax,
+	ROUND(AVG(array_length(c_a_o.words,1)),2) as WAve, 
+    MIN(array_length(c_a_o.words,1)) as WMin, 
+    MAX(array_length(c_a_o.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_a_o.words)),1)),2) as SWAve
+FROM c_a_o  UNION ALL
+SELECT 'c_a_c' as table, count(*) as count,
+    ROUND(AVG(length(c_a_c.comment)),2) as LAve, 
+	MIN(length(c_a_c.comment)) as LMin,
+	MAX(length(c_a_c.comment)) as LMax,
+	ROUND(AVG(array_length(c_a_c.words,1)),2) as WAve, 
+    MIN(array_length(c_a_c.words,1)) as WMin, 
+    MAX(array_length(c_a_c.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_a_c.words)),1)),2) as SWAve
+FROM c_a_c  UNION ALL
+SELECT 'c_a_l' as table, count(*) as count,
+    ROUND(AVG(length(c_a_l.comment)),2) as LAve, 
+	MIN(length(c_a_l.comment)) as LMin,
+	MAX(length(c_a_l.comment)) as LMax,
+	ROUND(AVG(array_length(c_a_l.words,1)),2) as WAve, 
+    MIN(array_length(c_a_l.words,1)) as WMin, 
+    MAX(array_length(c_a_l.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_a_l.words)),1)),2) as SWAve
+FROM c_a_l  UNION ALL
+SELECT 'c_i_o' as table, count(*) as count,
+    ROUND(AVG(length(c_i_o.comment)),2) as LAve, 
+	MIN(length(c_i_o.comment)) as LMin,
+	MAX(length(c_i_o.comment)) as LMax,
+	ROUND(AVG(array_length(c_i_o.words,1)),2) as WAve, 
+    MIN(array_length(c_i_o.words,1)) as WMin, 
+    MAX(array_length(c_i_o.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_i_o.words)),1)),2) as SWAve
+FROM c_i_o  UNION ALL	
+SELECT 'c_i_c' as table, count(*) as count,
+    ROUND(AVG(length(c_i_c.comment)),2) as LAve, 
+	MIN(length(c_i_c.comment)) as LMin,
+	MAX(length(c_i_c.comment)) as LMax,
+	ROUND(AVG(array_length(c_i_c.words,1)),2) as WAve, 
+    MIN(array_length(c_i_c.words,1)) as WMin, 
+    MAX(array_length(c_i_c.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_i_c.words)),1)),2) as SWAve
+FROM c_i_c  UNION ALL
+SELECT 'c_i_l' as table, count(*) as count,
+    ROUND(AVG(length(c_i_l.comment)),2) as LAve, 
+	MIN(length(c_i_l.comment)) as LMin,
+	MAX(length(c_i_l.comment)) as LMax,
+	ROUND(AVG(array_length(c_i_l.words,1)),2) as WAve, 
+    MIN(array_length(c_i_l.words,1)) as WMin, 
+    MAX(array_length(c_i_l.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_i_l.words)),1)),2) as SWAve
+FROM c_i_l  UNION ALL
+SELECT 'c_m_o' as table, count(*) as count,
+    ROUND(AVG(length(c_m_o.comment)),2) as LAve, 
+	MIN(length(c_m_o.comment)) as LMin,
+	MAX(length(c_m_o.comment)) as LMax,
+	ROUND(AVG(array_length(c_m_o.words,1)),2) as WAve, 
+    MIN(array_length(c_m_o.words,1)) as WMin, 
+    MAX(array_length(c_m_o.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_m_o.words)),1)),2) as SWAve
+FROM c_m_o  UNION ALL	
+SELECT 'c_m_c' as table, count(*) as count,
+    ROUND(AVG(length(c_m_c.comment)),2) as LAve, 
+	MIN(length(c_m_c.comment)) as LMin,
+	MAX(length(c_m_c.comment)) as LMax,
+	ROUND(AVG(array_length(c_m_c.words,1)),2) as WAve, 
+    MIN(array_length(c_m_c.words,1)) as WMin, 
+    MAX(array_length(c_m_c.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_m_c.words)),1)),2) as SWAve
+FROM c_m_c  UNION ALL
+SELECT 'c_m_l' as table, count(*) as count,
+    ROUND(AVG(length(c_m_l.comment)),2) as LAve, 
+	MIN(length(c_m_l.comment)) as LMin,
+	MAX(length(c_m_l.comment)) as LMax,
+	ROUND(AVG(array_length(c_m_l.words,1)),2) as WAve, 
+    MIN(array_length(c_m_l.words,1)) as WMin, 
+    MAX(array_length(c_m_l.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_m_l.words)),1)),2) as SWAve
+FROM c_m_l  UNION ALL
+SELECT 'c_w_o' as table, count(*) as count,
+    ROUND(AVG(length(c_w_o.comment)),2) as LAve, 
+	MIN(length(c_w_o.comment)) as LMin,
+	MAX(length(c_w_o.comment)) as LMax,
+	ROUND(AVG(array_length(c_w_o.words,1)),2) as WAve, 
+    MIN(array_length(c_w_o.words,1)) as WMin, 
+    MAX(array_length(c_w_o.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_w_o.words)),1)),2) as SWAve
+FROM c_w_o  UNION ALL	
+SELECT 'c_w_c' as table, count(*) as count,
+    ROUND(AVG(length(c_w_c.comment)),2) as LAve, 
+	MIN(length(c_w_c.comment)) as LMin,
+	MAX(length(c_w_c.comment)) as LMax,
+	ROUND(AVG(array_length(c_w_c.words,1)),2) as WAve, 
+    MIN(array_length(c_w_c.words,1)) as WMin, 
+    MAX(array_length(c_w_c.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_w_c.words)),1)),2) as SWAve
+FROM c_w_c  UNION ALL
+SELECT 'c_w_l' as table, count(*) as count,
+    ROUND(AVG(length(c_w_l.comment)),2) as LAve, 
+	MIN(length(c_w_l.comment)) as LMin,
+	MAX(length(c_w_l.comment)) as LMax,
+	ROUND(AVG(array_length(c_w_l.words,1)),2) as WAve, 
+    MIN(array_length(c_w_l.words,1)) as WMin, 
+    MAX(array_length(c_w_l.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_w_l.words)),1)),2) as SWAve
+FROM c_w_l  UNION ALL
+SELECT 'c_t_o' as table, count(*) as count,
+    ROUND(AVG(length(c_t_o.comment)),2) as LAve, 
+	MIN(length(c_t_o.comment)) as LMin,
+	MAX(length(c_t_o.comment)) as LMax,
+	ROUND(AVG(array_length(c_t_o.words,1)),2) as WAve, 
+    MIN(array_length(c_t_o.words,1)) as WMin, 
+    MAX(array_length(c_t_o.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_t_o.words)),1)),2) as SWAve
+FROM c_t_o  UNION ALL	
+SELECT 'c_t_c' as table, count(*) as count,
+    ROUND(AVG(length(c_t_c.comment)),2) as LAve, 
+	MIN(length(c_t_c.comment)) as LMin,
+	MAX(length(c_t_c.comment)) as LMax,
+	ROUND(AVG(array_length(c_t_c.words,1)),2) as WAve, 
+    MIN(array_length(c_t_c.words,1)) as WMin, 
+    MAX(array_length(c_t_c.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_t_c.words)),1)),2) as SWAve
+FROM c_t_c  UNION ALL
+SELECT 'c_t_l' as table, count(*) as count,
+    ROUND(AVG(length(c_t_l.comment)),2) as LAve, 
+	MIN(length(c_t_l.comment)) as LMin,
+	MAX(length(c_t_l.comment)) as LMax,
+	ROUND(AVG(array_length(c_t_l.words,1)),2) as WAve, 
+    MIN(array_length(c_t_l.words,1)) as WMin, 
+    MAX(array_length(c_t_l.words,1)) as WMax, 
+	ROUND(AVG(array_length((select array_agg(word) as nombres FROM stop_words where word = any(c_t_l.words)),1)),2) as SWAve
+FROM c_t_l  
+),
+word_uses AS
+(
+select
+fw_t_u.word as Word, (select count(*) from stop_words where stop_words.word=fw_t_u.word) as sw, fw_t_u.frequency as t_u, 
+COALESCE(fw_a_o.frequency,0) as a_o, COALESCE(fw_a_c.frequency,0) as a_c, COALESCE(fw_a_l.frequency,0) as a_l,
+COALESCE(fw_i_o.frequency,0) as i_o, COALESCE(fw_i_c.frequency,0) as i_c, COALESCE(fw_i_l.frequency,0) as i_l,
+COALESCE(fw_m_o.frequency,0) as m_o, COALESCE(fw_m_c.frequency,0) as m_c, COALESCE(fw_m_l.frequency,0) as m_l,
+COALESCE(fw_w_o.frequency,0) as w_o, COALESCE(fw_w_c.frequency,0) as w_c, COALESCE(fw_w_l.frequency,0) as w_l
+FROM fw_t_u 
+LEFT JOIN fw_a_o ON fw_t_u.word = fw_a_o.word
+LEFT JOIN fw_a_c ON fw_t_u.word = fw_a_c.word
+LEFT JOIN fw_a_l ON fw_t_u.word = fw_a_l.word
+LEFT JOIN fw_i_o ON fw_t_u.word = fw_i_o.word
+LEFT JOIN fw_i_c ON fw_t_u.word = fw_i_c.word
+LEFT JOIN fw_i_l ON fw_t_u.word = fw_i_l.word
+LEFT JOIN fw_m_o ON fw_t_u.word = fw_m_o.word
+LEFT JOIN fw_m_c ON fw_t_u.word = fw_m_c.word
+LEFT JOIN fw_m_l ON fw_t_u.word = fw_m_l.word
+LEFT JOIN fw_w_o ON fw_t_u.word = fw_w_o.word
+LEFT JOIN fw_w_c ON fw_t_u.word = fw_w_c.word
+LEFT JOIN fw_w_l ON fw_t_u.word = fw_w_l.word
+order by fw_t_u.frequency DESC 
+),
+word_uses_sum AS
+(
+select
+	sum(t_u) as t_u_s,
+	sum(a_o) as a_o_s,
+	sum(a_c) as a_c_s,
+	sum(a_l) as a_l_s,
+	sum(i_o) as i_o_s,
+	sum(i_c) as i_c_s,
+	sum(i_l) as i_l_s,
+	sum(m_o) as m_o_s,
+	sum(m_c) as m_c_s,
+	sum(m_l) as m_l_s,
+	sum(w_o) as w_o_s,
+	sum(w_c) as w_c_s,
+	sum(w_l) as w_l_s
+FROM word_uses	
+),
+word_uses_sum_rw AS
+(
+select
+	sum(t_u) as t_u_s,
+	sum(a_o) as a_o_s,
+	sum(a_c) as a_c_s,
+	sum(a_l) as a_l_s,
+	sum(i_o) as i_o_s,
+	sum(i_c) as i_c_s,
+	sum(i_l) as i_l_s,
+	sum(m_o) as m_o_s,
+	sum(m_c) as m_c_s,
+	sum(m_l) as m_l_s,
+	sum(w_o) as w_o_s,
+	sum(w_c) as w_c_s,
+	sum(w_l) as w_l_s
+FROM word_uses	
+WHERE sw=0
+),
+word_uses_sum_sw AS
+(
+select
+	sum(t_u) as t_u_s,
+	sum(a_o) as a_o_s,
+	sum(a_c) as a_c_s,
+	sum(a_l) as a_l_s,
+	sum(i_o) as i_o_s,
+	sum(i_c) as i_c_s,
+	sum(i_l) as i_l_s,
+	sum(m_o) as m_o_s,
+	sum(m_c) as m_c_s,
+	sum(m_l) as m_l_s,
+	sum(w_o) as w_o_s,
+	sum(w_c) as w_c_s,
+	sum(w_l) as w_l_s
+FROM word_uses	
+WHERE sw=1
+),
+word_uses_normalized_raw AS
+(
+select 
+	word, sw,	
+	t_u/(select t_u_s from word_uses_sum) as t_u,
+	a_o/(select a_o_s from word_uses_sum) as a_o,
+	a_c/(select a_c_s from word_uses_sum) as a_c,
+	a_l/(select a_l_s from word_uses_sum) as a_l,
+	i_o/(select i_o_s from word_uses_sum) as i_o,
+	i_c/(select i_c_s from word_uses_sum) as i_c,
+	i_l/(select i_l_s from word_uses_sum) as i_l,
+	m_o/(select m_o_s from word_uses_sum) as m_o,
+	m_c/(select m_c_s from word_uses_sum) as m_c,
+	m_l/(select m_l_s from word_uses_sum) as m_l,
+	w_o/(select w_o_s from word_uses_sum) as w_o,
+	w_c/(select w_c_s from word_uses_sum) as w_c,
+	w_l/(select w_l_s from word_uses_sum) as w_l	
+from word_uses
+),
+word_uses_normalized as
+(
+select *,
+	(a_o+a_c+a_l)/3 as a_,
+	(i_o+i_c+i_l)/3 as i_,
+	(m_o+m_c+m_l)/3 as m_,
+	(w_o+w_c+w_l)/3 as w_,
+	(a_o+i_o+m_o+w_o)/4 as o_,
+	(a_c+i_c+m_c+w_c)/4 as c_,
+	(a_l+i_l+m_l+w_l)/4 as l_
+from word_uses_normalized_raw
+),
+word_uses_normalized_rw AS
+(
+select * from word_uses_normalized WHERE sw=0
+),
+word_uses_normalized_sw AS
+(
+select * from word_uses_normalized WHERE sw=1
+),
+cosine_w AS
+(
+select
+	ROUND(sum(o_*c_)/(SQRT(sum(o_*o_))*SQRT(sum(c_*c_))),2) as oc_,
+	ROUND(sum(o_*l_)/(SQRT(sum(o_*o_))*SQRT(sum(l_*l_))),2) as ol_,	
+	ROUND(sum(l_*c_)/(SQRT(sum(l_*l_))*SQRT(sum(c_*c_))),2) as cl_,	
+	
+	ROUND(sum(a_*i_)/(SQRT(sum(a_*a_))*SQRT(sum(i_*i_))),2) as ai_,
+	ROUND(sum(a_*m_)/(SQRT(sum(a_*a_))*SQRT(sum(m_*m_))),2) as am_,
+	ROUND(sum(a_*w_)/(SQRT(sum(a_*a_))*SQRT(sum(w_*w_))),2) as aw_,
+	ROUND(sum(i_*m_)/(SQRT(sum(i_*i_))*SQRT(sum(m_*m_))),2) as im_,
+	ROUND(sum(i_*w_)/(SQRT(sum(i_*i_))*SQRT(sum(w_*w_))),2) as iw_,
+	ROUND(sum(m_*w_)/(SQRT(sum(m_*m_))*SQRT(sum(w_*w_))),2) as mw_,	
+	
+	ROUND(sum(a_o*a_c)/(SQRT(sum(a_o*a_o))*SQRT(sum(a_c*a_c))),2) as a_oc,
+	ROUND(sum(a_o*a_l)/(SQRT(sum(a_o*a_o))*SQRT(sum(a_l*a_l))),2) as a_ol,	
+	ROUND(sum(a_l*a_c)/(SQRT(sum(a_l*a_l))*SQRT(sum(a_c*a_c))),2) as a_cl,	
+
+	ROUND(sum(i_o*i_c)/(SQRT(sum(i_o*i_o))*SQRT(sum(i_c*i_c))),2) as i_oc,
+	ROUND(sum(i_o*i_l)/(SQRT(sum(i_o*i_o))*SQRT(sum(i_l*i_l))),2) as i_ol,	
+	ROUND(sum(i_l*i_c)/(SQRT(sum(i_l*i_l))*SQRT(sum(i_c*i_c))),2) as i_cl,	
+
+	ROUND(sum(m_o*m_c)/(SQRT(sum(m_o*m_o))*SQRT(sum(m_c*m_c))),2) as m_oc,
+	ROUND(sum(m_o*m_l)/(SQRT(sum(m_o*m_o))*SQRT(sum(m_l*m_l))),2) as m_ol,	
+	ROUND(sum(m_l*m_c)/(SQRT(sum(m_l*m_l))*SQRT(sum(m_c*m_c))),2) as m_cl,	
+
+	ROUND(sum(w_o*w_c)/(SQRT(sum(w_o*w_o))*SQRT(sum(w_c*w_c))),2) as w_oc,
+	ROUND(sum(w_o*w_l)/(SQRT(sum(w_o*w_o))*SQRT(sum(w_l*w_l))),2) as w_ol,	
+	ROUND(sum(w_l*w_c)/(SQRT(sum(w_l*w_l))*SQRT(sum(w_c*w_c))),2) as w_cl	
+
+FROM word_uses_normalized
+),
+cosine_rw AS
+(
+select
+	ROUND(sum(o_*c_)/(SQRT(sum(o_*o_))*SQRT(sum(c_*c_))),2) as oc_,
+	ROUND(sum(o_*l_)/(SQRT(sum(o_*o_))*SQRT(sum(l_*l_))),2) as ol_,	
+	ROUND(sum(l_*c_)/(SQRT(sum(l_*l_))*SQRT(sum(c_*c_))),2) as cl_,	
+	
+	ROUND(sum(a_*i_)/(SQRT(sum(a_*a_))*SQRT(sum(i_*i_))),2) as ai_,
+	ROUND(sum(a_*m_)/(SQRT(sum(a_*a_))*SQRT(sum(m_*m_))),2) as am_,
+	ROUND(sum(a_*w_)/(SQRT(sum(a_*a_))*SQRT(sum(w_*w_))),2) as aw_,
+	ROUND(sum(i_*m_)/(SQRT(sum(i_*i_))*SQRT(sum(m_*m_))),2) as im_,
+	ROUND(sum(i_*w_)/(SQRT(sum(i_*i_))*SQRT(sum(w_*w_))),2) as iw_,
+	ROUND(sum(m_*w_)/(SQRT(sum(m_*m_))*SQRT(sum(w_*w_))),2) as mw_,	
+	
+	ROUND(sum(a_o*a_c)/(SQRT(sum(a_o*a_o))*SQRT(sum(a_c*a_c))),2) as a_oc,
+	ROUND(sum(a_o*a_l)/(SQRT(sum(a_o*a_o))*SQRT(sum(a_l*a_l))),2) as a_ol,	
+	ROUND(sum(a_l*a_c)/(SQRT(sum(a_l*a_l))*SQRT(sum(a_c*a_c))),2) as a_cl,	
+
+	ROUND(sum(i_o*i_c)/(SQRT(sum(i_o*i_o))*SQRT(sum(i_c*i_c))),2) as i_oc,
+	ROUND(sum(i_o*i_l)/(SQRT(sum(i_o*i_o))*SQRT(sum(i_l*i_l))),2) as i_ol,	
+	ROUND(sum(i_l*i_c)/(SQRT(sum(i_l*i_l))*SQRT(sum(i_c*i_c))),2) as i_cl,	
+
+	ROUND(sum(m_o*m_c)/(SQRT(sum(m_o*m_o))*SQRT(sum(m_c*m_c))),2) as m_oc,
+	ROUND(sum(m_o*m_l)/(SQRT(sum(m_o*m_o))*SQRT(sum(m_l*m_l))),2) as m_ol,	
+	ROUND(sum(m_l*m_c)/(SQRT(sum(m_l*m_l))*SQRT(sum(m_c*m_c))),2) as m_cl,	
+
+	ROUND(sum(w_o*w_c)/(SQRT(sum(w_o*w_o))*SQRT(sum(w_c*w_c))),2) as w_oc,
+	ROUND(sum(w_o*w_l)/(SQRT(sum(w_o*w_o))*SQRT(sum(w_l*w_l))),2) as w_ol,	
+	ROUND(sum(w_l*w_c)/(SQRT(sum(w_l*w_l))*SQRT(sum(w_c*w_c))),2) as w_cl	
+
+FROM word_uses_normalized_rw
+),
+cosine_sw AS
+(
+select
+	ROUND(sum(o_*c_)/(SQRT(sum(o_*o_))*SQRT(sum(c_*c_))),2) as oc_,
+	ROUND(sum(o_*l_)/(SQRT(sum(o_*o_))*SQRT(sum(l_*l_))),2) as ol_,	
+	ROUND(sum(l_*c_)/(SQRT(sum(l_*l_))*SQRT(sum(c_*c_))),2) as cl_,	
+	
+	ROUND(sum(a_*i_)/(SQRT(sum(a_*a_))*SQRT(sum(i_*i_))),2) as ai_,
+	ROUND(sum(a_*m_)/(SQRT(sum(a_*a_))*SQRT(sum(m_*m_))),2) as am_,
+	ROUND(sum(a_*w_)/(SQRT(sum(a_*a_))*SQRT(sum(w_*w_))),2) as aw_,
+	ROUND(sum(i_*m_)/(SQRT(sum(i_*i_))*SQRT(sum(m_*m_))),2) as im_,
+	ROUND(sum(i_*w_)/(SQRT(sum(i_*i_))*SQRT(sum(w_*w_))),2) as iw_,
+	ROUND(sum(m_*w_)/(SQRT(sum(m_*m_))*SQRT(sum(w_*w_))),2) as mw_,	
+	
+	ROUND(sum(a_o*a_c)/(SQRT(sum(a_o*a_o))*SQRT(sum(a_c*a_c))),2) as a_oc,
+	ROUND(sum(a_o*a_l)/(SQRT(sum(a_o*a_o))*SQRT(sum(a_l*a_l))),2) as a_ol,	
+	ROUND(sum(a_l*a_c)/(SQRT(sum(a_l*a_l))*SQRT(sum(a_c*a_c))),2) as a_cl,	
+
+	ROUND(sum(i_o*i_c)/(SQRT(sum(i_o*i_o))*SQRT(sum(i_c*i_c))),2) as i_oc,
+	ROUND(sum(i_o*i_l)/(SQRT(sum(i_o*i_o))*SQRT(sum(i_l*i_l))),2) as i_ol,	
+	ROUND(sum(i_l*i_c)/(SQRT(sum(i_l*i_l))*SQRT(sum(i_c*i_c))),2) as i_cl,	
+
+	ROUND(sum(m_o*m_c)/(SQRT(sum(m_o*m_o))*SQRT(sum(m_c*m_c))),2) as m_oc,
+	ROUND(sum(m_o*m_l)/(SQRT(sum(m_o*m_o))*SQRT(sum(m_l*m_l))),2) as m_ol,	
+	ROUND(sum(m_l*m_c)/(SQRT(sum(m_l*m_l))*SQRT(sum(m_c*m_c))),2) as m_cl,	
+
+	ROUND(sum(w_o*w_c)/(SQRT(sum(w_o*w_o))*SQRT(sum(w_c*w_c))),2) as w_oc,
+	ROUND(sum(w_o*w_l)/(SQRT(sum(w_o*w_o))*SQRT(sum(w_l*w_l))),2) as w_ol,	
+	ROUND(sum(w_l*w_c)/(SQRT(sum(w_l*w_l))*SQRT(sum(w_c*w_c))),2) as w_cl	
+
+FROM word_uses_normalized_sw
+),
+cosine_similarity AS
+(
+select * from cosine_w
+UNION ALL
+select * from cosine_rw
+UNION ALL
+select * from cosine_sw
+),
+corr_w AS
+(
+select
+	ROUND(CORR(o_,c_)::NUMERIC,2) as oc_,
+	ROUND(CORR(o_,l_)::NUMERIC,2) as ol_,	
+	ROUND(CORR(l_,c_)::NUMERIC,2) as cl_,	
+	
+	ROUND(CORR(a_,i_)::NUMERIC,2) as ai_,
+	ROUND(CORR(a_,m_)::NUMERIC,2) as am_,
+	ROUND(CORR(a_,w_)::NUMERIC,2) as aw_,
+	ROUND(CORR(i_,m_)::NUMERIC,2) as im_,
+	ROUND(CORR(i_,w_)::NUMERIC,2) as iw_,
+	ROUND(CORR(m_,w_)::NUMERIC,2) as mw_,	
+	
+	ROUND(CORR(a_o,a_c)::NUMERIC,2) as a_oc,
+	ROUND(CORR(a_o,a_l)::NUMERIC,2) as a_ol,	
+	ROUND(CORR(a_l,a_c)::NUMERIC,2) as a_cl,	
+
+	ROUND(CORR(i_o,i_c)::NUMERIC,2) as i_oc,
+	ROUND(CORR(i_o,i_l)::NUMERIC,2) as i_ol,	
+	ROUND(CORR(i_l,i_c)::NUMERIC,2) as i_cl,	
+
+	ROUND(CORR(m_o,m_c)::NUMERIC,2) as m_oc,
+	ROUND(CORR(m_o,m_l)::NUMERIC,2) as m_ol,	
+	ROUND(CORR(m_l,m_c)::NUMERIC,2) as m_cl,	
+
+	ROUND(CORR(w_o,w_c)::NUMERIC,2) as w_oc,
+	ROUND(CORR(w_o,w_l)::NUMERIC,2) as w_ol,	
+	ROUND(CORR(w_l,w_c)::NUMERIC,2) as w_cl	
+FROM word_uses_normalized
+),
+corr_rw AS
+(
+select
+	ROUND(CORR(o_,c_)::NUMERIC,2) as oc_,
+	ROUND(CORR(o_,l_)::NUMERIC,2) as ol_,	
+	ROUND(CORR(l_,c_)::NUMERIC,2) as cl_,	
+	
+	ROUND(CORR(a_,i_)::NUMERIC,2) as ai_,
+	ROUND(CORR(a_,m_)::NUMERIC,2) as am_,
+	ROUND(CORR(a_,w_)::NUMERIC,2) as aw_,
+	ROUND(CORR(i_,m_)::NUMERIC,2) as im_,
+	ROUND(CORR(i_,w_)::NUMERIC,2) as iw_,
+	ROUND(CORR(m_,w_)::NUMERIC,2) as mw_,	
+	
+	ROUND(CORR(a_o,a_c)::NUMERIC,2) as a_oc,
+	ROUND(CORR(a_o,a_l)::NUMERIC,2) as a_ol,	
+	ROUND(CORR(a_l,a_c)::NUMERIC,2) as a_cl,	
+
+	ROUND(CORR(i_o,i_c)::NUMERIC,2) as i_oc,
+	ROUND(CORR(i_o,i_l)::NUMERIC,2) as i_ol,	
+	ROUND(CORR(i_l,i_c)::NUMERIC,2) as i_cl,	
+
+	ROUND(CORR(m_o,m_c)::NUMERIC,2) as m_oc,
+	ROUND(CORR(m_o,m_l)::NUMERIC,2) as m_ol,	
+	ROUND(CORR(m_l,m_c)::NUMERIC,2) as m_cl,	
+
+	ROUND(CORR(w_o,w_c)::NUMERIC,2) as w_oc,
+	ROUND(CORR(w_o,w_l)::NUMERIC,2) as w_ol,	
+	ROUND(CORR(w_l,w_c)::NUMERIC,2) as w_cl	
+FROM word_uses_normalized_rw
+),
+corr_sw AS
+(
+select
+	ROUND(CORR(o_,c_)::NUMERIC,2) as oc_,
+	ROUND(CORR(o_,l_)::NUMERIC,2) as ol_,	
+	ROUND(CORR(l_,c_)::NUMERIC,2) as cl_,	
+	
+	ROUND(CORR(a_,i_)::NUMERIC,2) as ai_,
+	ROUND(CORR(a_,m_)::NUMERIC,2) as am_,
+	ROUND(CORR(a_,w_)::NUMERIC,2) as aw_,
+	ROUND(CORR(i_,m_)::NUMERIC,2) as im_,
+	ROUND(CORR(i_,w_)::NUMERIC,2) as iw_,
+	ROUND(CORR(m_,w_)::NUMERIC,2) as mw_,	
+	
+	ROUND(CORR(a_o,a_c)::NUMERIC,2) as a_oc,
+	ROUND(CORR(a_o,a_l)::NUMERIC,2) as a_ol,	
+	ROUND(CORR(a_l,a_c)::NUMERIC,2) as a_cl,	
+
+	ROUND(CORR(i_o,i_c)::NUMERIC,2) as i_oc,
+	ROUND(CORR(i_o,i_l)::NUMERIC,2) as i_ol,	
+	ROUND(CORR(i_l,i_c)::NUMERIC,2) as i_cl,	
+
+	ROUND(CORR(m_o,m_c)::NUMERIC,2) as m_oc,
+	ROUND(CORR(m_o,m_l)::NUMERIC,2) as m_ol,	
+	ROUND(CORR(m_l,m_c)::NUMERIC,2) as m_cl,	
+
+	ROUND(CORR(w_o,w_c)::NUMERIC,2) as w_oc,
+	ROUND(CORR(w_o,w_l)::NUMERIC,2) as w_ol,	
+	ROUND(CORR(w_l,w_c)::NUMERIC,2) as w_cl	
+FROM word_uses_normalized_sw
+),
+correl AS
+(
+select * from corr_w
+UNION ALL
+select * from corr_rw
+UNION ALL
+select * from corr_sw
+)
+select 'Please, read the instructions and exectute the query you want to execute by removing --- '
+
+--- Use the following query to get the Pearson correlation coefficient
+--- between several pairs of vectors
+--select * from correl
+
+--- Use the following query to get the cosine_similarity
+--- between several pairs of vectors
+--select * from cosine_similarity
+
+--- Use the following query to get the number of frequent word 
+--  for each combination of generator (original by humnans, chatGPT, chatGPT with requested length) and
+--  for each case and in general, counting the use of relevant words, stop words and total
+-- select * from fw_counts						
+
+--- Use the following query to get the number of comments, 
+--  the length of the comments (average, min, max) 
+--  the number of frequent word used in the comments (average, min, max)  
+--  the average number of relevant and stop word used in the comments
+--  for each combination of generator (original by humans, chatGPT, chatGPT with requested length) and
+--  for each case and in general
+--- select * from c_counts
+
+--- Use the following query to get the all the words included in the frequent word of each case 
+--  with the particular numer of uses in each case
+-- select * from word_uses
